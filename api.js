@@ -1,12 +1,10 @@
 const express = require('express');
-const { validatePayload } = require('./identifyService');
-const { Contact } = require('./contactmodel');
+const { validatePayload, checkDb } = require('./identifyService');
 
 const apiRouter = express.Router();
 
-apiRouter.post('/identify', validatePayload, (req, res) => {
-  const { email, phoneNumber } = req.body;
-  res.json({ email, phoneNumber });
+apiRouter.post('/identify', validatePayload, checkDb, (req, res) => {
+  res.json({ success: true, message: 'Identification successful' });
 });
 
 module.exports = apiRouter;
