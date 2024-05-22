@@ -4,7 +4,7 @@
   "description": "1. Wants to save his friend; FluxCart sells parts needed to build his contraption.\r 2. Doc is using different emails and phone numbers for each of his purchases.",
   "main": "app.js",
   "scripts": {
-      "start": "node app.js",
+    "start": "node app.js"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +12,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "mysql2": "^3.9.7",
     "sequelize": "^6.37.3"
   }
 }
