@@ -28,6 +28,7 @@ async function checkDb(req, res, next) {
       console.log('Contact found with phoneNumber:', phoneNumber);
     }
 
+    console.log(primaryContactID)
     // if no matching email or phone we create a new contact
     if (!contactA && !contactB) {
       console.log('Creating new primary contact');
@@ -89,6 +90,13 @@ async function checkDb(req, res, next) {
       // primary turns into secondary
       if (contactA.id != contactB.id && contactA.linkPrecedence == 'primary' && contactB.linkPrecedence == 'primary') {
         console.log('Changing primary contact to secondary:', contactB.id);
+        const tempcontacts = await Contact.findAll({ where: { linkedId: contactB.id } });
+        console.log(tempcontacts);
+        tempcontacts.forEach(async (tempcontact) => {
+          tempcontact.linkedId = contactA.id;
+          await tempcontact.save();
+        });
+
         contactB.linkedId = contactA.id;
         contactB.linkPrecedence = 'secondary';
         await contactB.save();
