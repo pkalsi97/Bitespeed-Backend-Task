@@ -1,8 +1,12 @@
 const express = require('express');
 const sequelize = require('./db');
+const apiRouter = require('./api');
 const Contact = require('./contactmodel');
 
 const app = express();
+
+app.use(express.json());
+app.use('/api', apiRouter); 
 
 sequelize.sync()
   .then(() => {
