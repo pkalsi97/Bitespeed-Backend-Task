@@ -1,12 +1,11 @@
 const express = require('express');
 const sequelize = require('./db');
 const apiRouter = require('./api');
-const Contact = require('./contactmodel');
 
 const app = express();
 
 app.use(express.json());
-app.use('/api', apiRouter); 
+app.use('/api', apiRouter);
 
 sequelize.sync()
   .then(() => {
@@ -16,6 +15,7 @@ sequelize.sync()
     console.error('Unable to sync models with the database:', error);
   });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on port ${process.env.PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

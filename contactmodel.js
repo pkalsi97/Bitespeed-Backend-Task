@@ -5,40 +5,40 @@ const Contact = sequelize.define('Contact', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    autoIncrement: true
+    autoIncrement: true,
   },
   phoneNumber: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
   },
   email: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
   },
   linkedId: {
     type: DataTypes.INTEGER,
-    allowNull: true
+    allowNull: true,
   },
   linkPrecedence: {
     type: DataTypes.ENUM('secondary', 'primary'),
-    allowNull: false
+    allowNull: false,
   },
   createdAt: {
     type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+    defaultValue: DataTypes.NOW,
   },
   updatedAt: {
     type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+    defaultValue: DataTypes.NOW,
   },
   deletedAt: {
     type: DataTypes.DATE,
-    allowNull: true
-  }
+    allowNull: true,
+  },
 }, {
   timestamps: true,
   paranoid: true,
-  tableName: 'Contact'
+  tableName: 'Contact',
 });
 
 module.exports = Contact;

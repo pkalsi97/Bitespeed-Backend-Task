@@ -1,13 +1,10 @@
 require('dotenv').config();
-
 const fs = require('fs');
 const path = require('path');
 const { Sequelize } = require('sequelize');
 
-
 const caCertPath = path.join(__dirname, 'ca-cert.pem');
 const caCert = fs.readFileSync(caCertPath);
-
 
 const sequelize = new Sequelize({
   dialect: 'mysql',
