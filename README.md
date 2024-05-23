@@ -1,8 +1,19 @@
 # Bitespeed-Backend-Task
 ## Identity Reconciliation
 
-### Notes and Thought Process
+### cURL Command to Identify Contact
+```sh
+curl -X POST https://bitespeed-backend-task-gu0k.onrender.com/api/identify \
+     -H "Content-Type: application/json" \
+     -d '{
+           "email": "test@example.com",
+           "phoneNumber": "1234567890"
+         }'
+```
 
+
+
+### Notes and Thought Process
 #### Doc
 1. Wants to save his friend; FluxCart sells parts needed to build his contraption.
 2. Doc is using different emails and phone numbers for each of his purchases.
