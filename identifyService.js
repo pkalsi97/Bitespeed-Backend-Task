@@ -124,6 +124,14 @@ async function checkDb(req, res, next) {
 
     }
 
+    if (!primaryContactA_ID && primaryContactB_ID && !email) {
+      primaryContactID = primaryContactB_ID;
+    }
+
+    if (primaryContactA_ID && !primaryContactB_ID && !phoneNumber) {
+      primaryContactID = primaryContactA_ID;
+    }
+
     let primaryContact = await Contact.findByPk(primaryContactID);
     console.log('Primary contact found:', primaryContact);
 
