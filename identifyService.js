@@ -11,140 +11,143 @@ function validatePayload(req, res, next) {
 async function checkDb(req, res, next) {
   try {
     const { email, phoneNumber } = req.body;
-
     console.log('Received request with email:', email, 'and phoneNumber:', phoneNumber);
 
     let contactA = null;
     let contactB = null;
     let primaryContactID = null;
-
-    if (email) {
-      contactA = await Contact.findOne({ where: { email } });
-      console.log('Contact found with email:', email);
-    }
-
-    if (phoneNumber) {
-      contactB = await Contact.findOne({ where: { phoneNumber } });
-      console.log('Contact found with phoneNumber:', phoneNumber);
-    }
-
-    console.log(primaryContactID)
-    // if no matching email or phone we create a new contact
-    if (!contactA && !contactB) {
-      console.log('Creating new primary contact');
-      let newContact = await Contact.create({
-        email: email || null,
-        phoneNumber: phoneNumber || null,
-        linkPrecedence: 'primary',
-      });
-      primaryContactID = newContact.id;
-      console.log('New primary contact created:', newContact.id);
-    }
-
-    if (contactA) {
-      if (contactA.linkPrecedence == 'primary') {
-        primaryContactID = contactA.id;
-      } else if (contactA.linkPrecedence == 'secondary') {
-        primaryContactID = contactA.linkedid;
-      }
-      console.log('Primary contact found using email:', primaryContactID);
-    } else if (contactB) {
-      if (contactB.linkPrecedence == 'primary') {
-        primaryContactID = contactB.id;
-      } else if (contactB.linkPrecedence == 'secondary') {
-        primaryContactID = contactB.linkedid;
-      }
-      console.log('Primary contact found using phoneNumber:', primaryContactID);
-    }
-
-    let primaryContact = await Contact.findByPk(primaryContactID);
-
-    // create Secondary Contact
-
-    if (contactA && !contactB && phoneNumber) {
-      console.log('Creating new secondary contact linked to contactA');
-      let newContact = await Contact.create({
-        email: email || null,
-        phoneNumber: phoneNumber || null,
-        linkedId: primaryContact.id,
-        linkPrecedence: 'secondary',
-      });
-      console.log('New secondary contact created:', newContact.id);
-    }
-
-    if (contactB && !contactA && email) {
-      console.log('Creating new secondary contact linked to contactB');
-      let newContact = await Contact.create({
-        email: email || null,
-        phoneNumber: phoneNumber || null,
-        linkedId: primaryContact.id,
-        linkPrecedence: 'secondary',
-      });
-      console.log('New secondary contact created:', newContact.id);
-    }
-
-    // if both email and phone are present
-
-    if (contactA && contactB) {
-      console.log('Both email and phone contacts found');
-      // primary turns into secondary
-      if (contactA.id != contactB.id && contactA.linkPrecedence == 'primary' && contactB.linkPrecedence == 'primary') {
-        console.log('Changing primary contact to secondary:', contactB.id);
-        const tempcontacts = await Contact.findAll({ where: { linkedId: contactB.id } });
-        console.log(tempcontacts);
-        tempcontacts.forEach(async (tempcontact) => {
-          tempcontact.linkedId = contactA.id;
-          await tempcontact.save();
-        });
-
-        contactB.linkedId = contactA.id;
-        contactB.linkPrecedence = 'secondary';
-        await contactB.save();
-        console.log('Primary contact updated to secondary');
-      }
-    }
-
-    // find all secondary contacts
-
-    console.log('Let\'s find all contacts linked to primary contact');
-
-    const contacts = await Contact.findAll({ where: { linkedId: primaryContact.id } });
-
-    console.log(contacts);
     let payload = {
       contact: {
-        primaryContactId: primaryContact.id,
+        primaryContactId: null,
         emails: [],
         phoneNumbers: [],
         secondaryContactIds: [],
       },
     };
 
+    if (email) {
+      console.log('Checking for contact with email:', email);
+      contactA = await Contact.findOne({ where: { email } });
+      console.log('Contact with email found:', contactA);
+    }
+    if (phoneNumber) {
+      console.log('Checking for contact with phoneNumber:', phoneNumber);
+      contactB = await Contact.findOne({ where: { phoneNumber } });
+      console.log('Contact with phoneNumber found:', contactB);
+    }
+
+    if (!contactA && !contactB) {
+      console.log('No matching email or phone, creating a new primary contact');
+      let newContact = await Contact.create({
+        email: email || null,
+        phoneNumber: phoneNumber || null,
+        linkPrecedence: 'primary',
+      });
+      primaryContactID = newContact.id;
+      payload.contact.primaryContactId = primaryContactID;
+      payload.contact.emails.push(newContact.email);
+      payload.contact.phoneNumbers.push(newContact.phoneNumber);
+      console.log('New primary contact created:', newContact);
+      return res.json(payload);
+    }
+
+    let primaryContactA_ID;
+    let primaryContactB_ID;
+
+    if (contactA) {
+      if (contactA.linkPrecedence === 'primary') {
+        primaryContactA_ID = contactA.id;
+      } else if (contactA.linkPrecedence === 'secondary') {
+        primaryContactA_ID = contactA.linkedId;
+      }
+      console.log('Primary contact A ID:', primaryContactA_ID);
+    }
+
+    if (contactB) {
+      if (contactB.linkPrecedence === 'primary') {
+        primaryContactB_ID = contactB.id;
+      } else if (contactB.linkPrecedence === 'secondary') {
+        primaryContactB_ID = contactB.linkedId;
+      }
+      console.log('Primary contact B ID:', primaryContactB_ID);
+    }
+
+    if (primaryContactA_ID && primaryContactB_ID && (primaryContactA_ID !== primaryContactB_ID)) {
+      console.log('Both primary contact A and B exist and are different, linking them');
+      primaryContactB = await Contact.findByPk(primaryContactB_ID);
+      const tempContacts = await Contact.findAll({ where: { linkedId: primaryContactB_ID } });
+      console.log('Contacts linked to primary contact B:', tempContacts);
+      for (const tempContact of tempContacts) {
+        tempContact.linkedId = primaryContactA_ID;
+        await tempContact.save();
+        console.log('Updated linked contact:', tempContact);
+      }
+
+      primaryContactB.linkedId = primaryContactA_ID;
+      primaryContactB.linkPrecedence = 'secondary';
+      await primaryContactB.save();
+      primaryContactID = primaryContactA_ID;
+      console.log('Primary contact B updated:', primaryContactB);
+    }
+
+    if (primaryContactA_ID && !primaryContactB_ID && phoneNumber) {
+      console.log('Creating secondary contact linked to primary contact A');
+      let newContact = await Contact.create({
+        email: email || null,
+        phoneNumber: phoneNumber || null,
+        linkedId: primaryContactA_ID,
+        linkPrecedence: 'secondary',
+      });
+      primaryContactID = primaryContactA_ID;
+      console.log('New secondary contact created:', newContact);
+    }
+
+    if (!primaryContactA_ID && primaryContactB_ID && email) {
+      console.log('Creating secondary contact linked to primary contact B');
+      let newContact = await Contact.create({
+        email: email || null,
+        phoneNumber: phoneNumber || null,
+        linkedId: primaryContactB_ID,
+        linkPrecedence: 'secondary',
+      });
+      primaryContactID = primaryContactB_ID;
+      console.log('New secondary contact created:', newContact);
+    }
+
+    if (primaryContactA_ID && primaryContactB_ID && (primaryContactA_ID === primaryContactB_ID)) {
+        primaryContactA = await Contact.findByPk(primaryContactA_ID);
+        if(primaryContactA.linkPrecedence === 'primary'){
+          primaryContactID = primaryContactA_ID
+        }else if (primaryContactA.linkPrecedence === 'secondary'){
+          primaryContactID = primaryContactA.linkedID
+        }
+
+    }
+
+    let primaryContact = await Contact.findByPk(primaryContactID);
+    console.log('Primary contact found:', primaryContact);
+
+    const contacts = await Contact.findAll({ where: { linkedId: primaryContact.id } });
+    payload.contact.primaryContactId = primaryContact.id;
     if (primaryContact.email) payload.contact.emails.push(primaryContact.email);
     if (primaryContact.phoneNumber) payload.contact.phoneNumbers.push(primaryContact.phoneNumber);
 
     contacts.forEach(contact => {
-
-    if (contact.email && !payload.contact.emails.includes(contact.email)) {
-      payload.contact.emails.push(contact.email);
-    }
-    if (contact.phoneNumber && !payload.contact.phoneNumbers.includes(contact.phoneNumber)) {
-      payload.contact.phoneNumbers.push(contact.phoneNumber);
-    }
-      
+      if (contact.email && !payload.contact.emails.includes(contact.email)) {
+        payload.contact.emails.push(contact.email);
+      }
+      if (contact.phoneNumber && !payload.contact.phoneNumbers.includes(contact.phoneNumber)) {
+        payload.contact.phoneNumbers.push(contact.phoneNumber);
+      }
       payload.contact.secondaryContactIds.push(contact.id);
     });
 
-    console.log('Sending response with payload:', payload);
-    res.json(payload);
+    console.log('Final payload:', payload);
+    return res.json(payload);
   } catch (error) {
     console.error('Error in checkDb function:', error);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 }
-
-module.exports = { validatePayload, checkDb };
-
-
 
 module.exports = { validatePayload, checkDb };
